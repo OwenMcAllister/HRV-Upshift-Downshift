@@ -1,0 +1,29 @@
+{
+  "name": "autonomic-agility",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "base-64": "^1.0.0",
+    "expo": "~56.0.9",
+    "expo-dev-client": "~56.0.19",
+    "expo-status-bar": "~56.0.4",
+    "react": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-ble-plx": "^3.5.1",
+    "react-native-gifted-charts": "^1.4.77",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-svg": "15.15.4"
+  },
+  "devDependencies": {
+    "@types/base-64": "^1.0.2",
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "private": true
+}
