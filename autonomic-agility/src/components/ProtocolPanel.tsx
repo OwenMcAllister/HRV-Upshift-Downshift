@@ -40,17 +40,14 @@ export const ProtocolPanel: React.FC<Props> = ({
         <View style={styles.resultsCard}>
           <Text style={styles.resultsTitle}>Protocol Complete</Text>
           
-          {/* Hero Metric */}
           <View style={styles.heroBox}>
             <Text style={styles.heroLabel}>Dynamic Range</Text>
             <Text style={styles.resultHero}>{sessionResults.dynamicRange} <Text style={styles.unitText}>ms</Text></Text>
           </View>
           
-          {/* Detailed Phase Breakdown */}
           <View style={styles.breakdownContainer}>
             <Text style={styles.breakdownTitle}>Phase Analysis</Text>
 
-            {/* Phase 1: Baseline */}
             <View style={styles.phaseRow}>
               <View style={styles.phaseNameCol}>
                 <Text style={styles.phaseLabel}>1. Baseline</Text>
@@ -61,7 +58,6 @@ export const ProtocolPanel: React.FC<Props> = ({
               </View>
             </View>
 
-            {/* Phase 2: Meditation */}
             <View style={styles.phaseRow}>
               <View style={styles.phaseNameCol}>
                 <Text style={styles.phaseLabel}>2. Meditation</Text>
@@ -72,7 +68,6 @@ export const ProtocolPanel: React.FC<Props> = ({
               </View>
             </View>
 
-            {/* Phase 3: Puzzle */}
             <View style={styles.phaseRow}>
               <View style={styles.phaseNameCol}>
                 <Text style={styles.phaseLabel}>3. Puzzle</Text>
@@ -83,7 +78,6 @@ export const ProtocolPanel: React.FC<Props> = ({
               </View>
             </View>
 
-            {/* Phase 4: Breathwork */}
             <View style={[styles.phaseRow, { borderBottomWidth: 0 }]}>
               <View style={styles.phaseNameCol}>
                 <Text style={styles.phaseLabel}>4. Breathwork</Text>
@@ -93,7 +87,6 @@ export const ProtocolPanel: React.FC<Props> = ({
                 <Text style={styles.phaseStat}>Shift: <Text style={styles.phaseValue}>{sessionResults.shiftTimes[3]} s</Text></Text>
               </View>
             </View>
-
           </View>
           
           <TouchableOpacity style={styles.secondaryButton} onPress={onStart}>
@@ -134,7 +127,7 @@ const styles = StyleSheet.create({
   phaseStatEmpty: { color: '#475569', fontSize: 13, marginBottom: 2 },
   phaseValue: { color: '#f8fafc', fontWeight: 'bold' },
 
-  // Beautiful Custom Buttons
+  // Custom Buttons
   primaryButton: { backgroundColor: '#38bdf8', paddingVertical: 14, borderRadius: 12, width: '100%', alignItems: 'center', marginTop: 10 },
   primaryButtonText: { color: '#0f172a', fontSize: 16, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
   

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Button, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, Button, SafeAreaView, ScrollView } from 'react-native';
 import { BleManager, Device } from 'react-native-ble-plx';
 
 // Services & Utils
@@ -16,7 +16,7 @@ import { HRVChart } from './src/components/HRVChart';
 const manager = new BleManager();
 
 const PROTOCOL_PHASES = ['Baseline', 'Meditation', 'Puzzle Solving', 'Breathwork'];
-const PHASE_DURATION_SEC = 30; // 5 mins
+const PHASE_DURATION_SEC = 180; // 5 mins
 
 export default function App() {
   const [isScanning, setIsScanning] = useState(false);
@@ -37,13 +37,16 @@ export default function App() {
   const deviceRef = useRef<StandardBLEDevice | null>(null);
   const phaseDataRef = useRef<number[][]>([[], [], [], []]);
   
+  // Refs to sync React state with the BLE callback closure
   const sessionActiveRef = useRef(sessionActive);
   const currentPhaseIndexRef = useRef(currentPhaseIndex);
   const timeRemainingRef = useRef(timeRemaining);
+  const sessionResultsRef = useRef(sessionResults);
 
   useEffect(() => { sessionActiveRef.current = sessionActive; }, [sessionActive]);
   useEffect(() => { currentPhaseIndexRef.current = currentPhaseIndex; }, [currentPhaseIndex]);
   useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
+  useEffect(() => { sessionResultsRef.current = sessionResults; }, [sessionResults]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>;
@@ -70,6 +73,7 @@ export default function App() {
     setCurrentPhaseIndex(0);
     setTimeRemaining(PHASE_DURATION_SEC);
     setSessionResults(null);
+    setHrvHistory([]);
     setSessionActive(true);
   };
 
@@ -97,22 +101,47 @@ export default function App() {
       shiftTimes.push(stableIndex !== -1 ? stableIndex : PHASE_DURATION_SEC); 
     }
 
+    // Downsample the entire session's raw data for the final summary graph
+    const rawFlatData = data.flat();
+    const downsampled = [];
+    const chunkSize = Math.max(1, Math.floor(rawFlatData.length / 100));
+    
+    for (let i = 0; i < rawFlatData.length; i += chunkSize) {
+      const chunk = rawFlatData.slice(i, i + chunkSize);
+      const avg = chunk.reduce((a, b) => a + b, 0) / chunk.length;
+      downsampled.push({ value: avg });
+    }
+
     setSessionResults({
       dynamicRange: dynamicRange.toFixed(1),
       averages: phaseAverages.map(a => a.toFixed(1)),
-      shiftTimes: shiftTimes
+      shiftTimes: shiftTimes,
+      fullGraph: downsampled // We pass this to the graph when finished
     });
   };
 
-  const startScan = () => {
+const startScan = () => {
     setIsScanning(true);
     setScannedDevices([]); 
-    manager.startDeviceScan(['180d'], null, (error, device) => {
-      if (error) return;
-      if (device && device.name) {
-        setScannedDevices(prev => prev.find(d => d.id === device.id) ? prev : [...prev, device]);
+    
+    // Pass null instead of ['180d'] to scan all nearby devices, 
+    // ensuring we don't miss monitors with weirdly formatted UUIDs.
+    manager.startDeviceScan(null, null, (error, device) => {
+      if (error) {
+        console.warn("BLE Scan Error:", error);
+        return;
+      }
+      
+      // Look for ANY broadcasted name (name or localName)
+      if (device && (device.name || device.localName)) {
+        setScannedDevices(prev => {
+          // Prevent duplicates
+          if (prev.find(d => d.id === device.id)) return prev;
+          return [...prev, device];
+        });
       }
     });
+
     setTimeout(() => {
       manager.stopDeviceScan();
       setIsScanning(false);
@@ -130,6 +159,9 @@ export default function App() {
       deviceRef.current = standardDevice;
 
       standardDevice.startStreaming((data: HeartRateData) => {
+        // Stop updating the UI if the session has finished and is displaying results
+        if (sessionResultsRef.current) return;
+
         setCurrentBpm(data.bpm);
         
         if (data.rrIntervals.length > 0) {
@@ -141,14 +173,12 @@ export default function App() {
             if (currentHrv !== null) {
               setRmssd(currentHrv);
               
-              // PERFORMANCE FIX: Cap the UI Graph to a rolling window of 100 points
               setHrvHistory(prev => {
                 const newHistory = [...prev, { value: currentHrv }];
                 if (newHistory.length > 100) return newHistory.slice(-100);
                 return newHistory;
               });
 
-              // The math arrays store everything for final calculations
               if (sessionActiveRef.current) {
                 phaseDataRef.current[currentPhaseIndexRef.current].push(currentHrv);
               }
@@ -175,7 +205,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Agility</Text>
+        <Text style={styles.title}>HRV Agility</Text>
         <Text style={styles.status}>
           {deviceConnected ? `Connected to: ${deviceConnected}` : isScanning ? 'Scanning...' : 'Disconnected'}
         </Text>
@@ -189,7 +219,9 @@ export default function App() {
           onConnect={connectToDevice} 
         />
       ) : (
-        <View style={{ flex: 1 }}>
+        /* FIXED: Wrapped the dashboard in a ScrollView */
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+          
           <MetricsDashboard bpm={currentBpm} latestRR={latestRR} />
           
           <ProtocolPanel 
@@ -201,12 +233,18 @@ export default function App() {
             onStart={startProtocol}
           />
           
-          <HRVChart rmssd={rmssd} history={hrvHistory} />
+          {/* Dynamically toggle between real-time history and the downsampled session graph */}
+          <HRVChart 
+            rmssd={rmssd} 
+            history={sessionResults ? sessionResults.fullGraph : hrvHistory} 
+            isSummary={!!sessionResults}
+          />
 
           <View style={styles.controls}>
             <Button title="Disconnect" onPress={disconnect} color="#ef4444" />
           </View>
-        </View>
+
+        </ScrollView>
       )}
     </SafeAreaView>
   );

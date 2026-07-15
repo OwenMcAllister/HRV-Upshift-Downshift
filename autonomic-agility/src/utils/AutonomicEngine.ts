@@ -32,7 +32,7 @@ export class AutonomicEngine {
     if (this.rrWindow.length > 0) {
       const lastValidBeat = this.rrWindow[this.rrWindow.length - 1];
       const variance = Math.abs(rrMs - lastValidBeat) / lastValidBeat;
-      if (variance > 0.30) {
+      if (variance > 0.75) {
         return this.getLatestRMSSD();
       }
     }

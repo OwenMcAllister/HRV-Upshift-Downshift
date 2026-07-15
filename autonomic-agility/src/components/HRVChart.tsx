@@ -7,9 +7,15 @@ const screenWidth = Dimensions.get('window').width;
 interface Props {
   rmssd: number;
   history: { value: number }[];
+  isSummary?: boolean;
 }
 
-export const HRVChart: React.FC<Props> = React.memo(({ rmssd, history }) => {
+export const HRVChart: React.FC<Props> = React.memo(({ rmssd, history, isSummary }) => {
+
+  const chartSpacing = isSummary
+    ? Math.max(2,(screenWidth - 80) / Math.max(1, history.length - 1))
+    : 15;
+
   return (
     <View style={styles.chartContainer}>
       <View style={styles.chartHeader}>
@@ -23,10 +29,10 @@ export const HRVChart: React.FC<Props> = React.memo(({ rmssd, history }) => {
           data={history}
           width={screenWidth - 80}
           height={180}
-          spacing={15}
+          spacing={chartSpacing}
           initialSpacing={0}
           color="#38bdf8"
-          thickness={3}
+          thickness={isSummary ? 2 : 3}
           startFillColor="rgba(56, 189, 248, 0.4)"
           endFillColor="rgba(56, 189, 248, 0.02)"
           startOpacity={0.9}
